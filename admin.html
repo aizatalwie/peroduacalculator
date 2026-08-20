@@ -69,6 +69,9 @@ th{font-size:11px;text-transform:uppercase;color:#667085;background:#f8fafc}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 
 .notice{padding:10px 12px;border-radius:9px;background:#f8fafc;color:#475467;font-size:12px;margin-top:12px}
+.upload-note{font-size:11px;color:#667085;margin-top:6px}
+.thumb{object-fit:cover}
+
 .status{font-size:12px;margin-top:12px}
 .ok{color:#067647}.err{color:#b42318}
 
@@ -180,7 +183,14 @@ th{font-size:11px;text-transform:uppercase;color:#667085;background:#f8fafc}
       <div class="full"><label>Nama Model</label><input id="modelName" placeholder="Perodua Alza 1.5L X"></div>
       <div><label>Harga Kereta</label><input id="modelPrice" inputmode="numeric" placeholder="64791"></div>
       <div><label>Insurans</label><input id="modelInsurance" inputmode="numeric" placeholder="2020"></div>
-      <div class="full"><label>URL Gambar Kereta</label><input id="modelImage" placeholder="https://..."></div>
+      <div class="full">
+  <label>Gambar Kereta</label>
+  <input id="modelImageFile" type="file" accept="image/*">
+  <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+    <img id="modelImagePreview" class="thumb" style="width:110px;height:72px;display:none" alt="Preview">
+    <span id="modelImageName" style="font-size:12px;color:#667085"></span>
+  </div>
+</div>
       <div><label>Status</label><select id="modelActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
       <div><label>Susunan</label><input id="modelSort" inputmode="numeric" placeholder="1"></div>
     </div>
@@ -200,6 +210,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 let currentUser=null;
 let editingModelId=null;
+let editingModelImageUrl=null;
 
 function money(n){
   return "RM"+Math.round(Number(n)||0).toLocaleString("en-MY");
@@ -306,13 +317,38 @@ async function saveSettings(){
   setStatus("settingsStatus","Settings berjaya disimpan.",true);
 }
 
+function previewModelImage(){
+  const file=$("modelImageFile").files?.[0];
+  if(!file)return;
+  $("modelImageName").textContent=file.name;
+  $("modelImagePreview").src=URL.createObjectURL(file);
+  $("modelImagePreview").style.display="block";
+}
+async function uploadCarImage(file){
+  if(!file)return editingModelImageUrl||null;
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");
+  const safeExt=ext||"jpg";
+  const path=`${currentUser.id}/${crypto.randomUUID()}.${safeExt}`;
+  const {error}=await sb.storage.from("car-images").upload(path,file,{
+    cacheControl:"3600",
+    upsert:false,
+    contentType:file.type||"image/jpeg"
+  });
+  if(error)throw error;
+  const {data}=sb.storage.from("car-images").getPublicUrl(path);
+  return data.publicUrl;
+}
 function openModal(model=null){
   editingModelId=model?.id||null;
+  editingModelImageUrl=model?.image_url||null;
   $("modalTitle").textContent=editingModelId?"Edit Model":"Tambah Model";
   $("modelName").value=model?.model||"";
   $("modelPrice").value=model?.price??"";
   $("modelInsurance").value=model?.insurance??"";
-  $("modelImage").value=model?.image_url||"";
+  if($("modelImageFile"))$("modelImageFile").value="";
+  $("modelImageName").textContent=model?.image_url?"Gambar sedia ada akan dikekalkan jika tiada gambar baru.":"";
+  $("modelImagePreview").src=model?.image_url||"";
+  $("modelImagePreview").style.display=model?.image_url?"block":"none";
   $("modelActive").value=String(model?.is_active??true);
   $("modelSort").value=model?.sort_order??1;
   $("modelStatus").textContent="";
@@ -338,11 +374,22 @@ window.deleteModel=async id=>{
 };
 async function saveModel(){
   setStatus("modelStatus","Menyimpan...",true);
+  let imageUrl=editingModelImageUrl||null;
+  try{
+    const file=$("modelImageFile").files?.[0];
+    if(file){
+      imageUrl=await uploadCarImage(file);
+    }
+  }catch(e){
+    setStatus("modelStatus","Upload gambar gagal: "+e.message);
+    return;
+  }
+
   const payload={
     model:$("modelName").value.trim(),
     price:num($("modelPrice").value),
     insurance:num($("modelInsurance").value),
-    image_url:$("modelImage").value.trim()||null,
+    image_url:imageUrl,
     is_active:$("modelActive").value==="true",
     sort_order:num($("modelSort").value)||1
   };
@@ -404,6 +451,7 @@ $("refresh").onclick=()=>loadDashboard();
 $("saveProfile").onclick=saveProfile;
 $("saveSettings").onclick=saveSettings;
 $("photoUrl").addEventListener("input",updateAvatar);
+$("modelImageFile").addEventListener("change",previewModelImage);
 $("addModel").onclick=()=>openModal();
 $("saveModel").onclick=saveModel;
 $("closeModal").onclick=closeModal;
