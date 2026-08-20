@@ -288,7 +288,7 @@ body{
 .status{background:#fff;padding:0 14px 14px;font-size:12px;color:#555}
 .error{color:#b00020}
 .hidden{display:none!important}
-#modelSelect{display:none!important}
+#modelSelect{display:block!important}
 
 @media(max-width:700px){
   .logo{width:72px;height:72px}.logo-mark{width:37px;height:37px}.logo-word{font-size:10px}
@@ -421,7 +421,8 @@ function render(){
     carImg.src = m.image_url;
   }
 
-  if(!DATA.profile || !DATA.settings) return;
+  DATA.profile = DATA.profile || {};
+  DATA.settings = DATA.settings || {downpayment:0};
 
   const rebate = num($("rebate").value);
   const rate = num($("rate").value);
@@ -474,53 +475,63 @@ function render(){
 }
 
 async function loadData(){
+  // FRONTEND PUBLIC:
+  // Index tidak lagi memerlukan Supabase Auth session.
+  // Jika URL mempunyai ?agent=UUID, profile/settings agent itu digunakan.
+  // Jika tiada, sistem gunakan profile pertama yang boleh dibaca secara public.
+  const agentId = new URLSearchParams(window.location.search).get("agent");
 
-
-  const {data:{user},error:userError} = await sb.auth.getUser();
-  if(userError) throw userError;
-
-  if(!user){
-    return;
-  }
-
-  const [modelsRes,profileRes,settingsRes] = await Promise.all([
+  const [modelsRes, profileRes, settingsRes] = await Promise.all([
     sb.from("car_models")
       .select("id,model,price,insurance,image_url,is_active,sort_order")
       .eq("is_active",true)
       .order("sort_order",{ascending:true})
       .order("model",{ascending:true}),
 
-    sb.from("profiles")
-      .select("id,full_name,photo_url,role_name,tag_line,whatsapp")
-      .eq("id",user.id)
-      .single(),
+    agentId
+      ? sb.from("profiles")
+          .select("id,full_name,photo_url,role_name,tag_line,whatsapp")
+          .eq("id",agentId)
+          .maybeSingle()
+      : sb.from("profiles")
+          .select("id,full_name,photo_url,role_name,tag_line,whatsapp")
+          .limit(1)
+          .maybeSingle(),
 
-    sb.from("calculator_settings")
-      .select("user_id,downpayment")
-      .eq("user_id",user.id)
-      .single()
+    agentId
+      ? sb.from("calculator_settings")
+          .select("user_id,downpayment")
+          .eq("user_id",agentId)
+          .maybeSingle()
+      : sb.from("calculator_settings")
+          .select("user_id,downpayment")
+          .limit(1)
+          .maybeSingle()
   ]);
 
   if(modelsRes.error) throw modelsRes.error;
-  if(profileRes.error) throw profileRes.error;
-  if(settingsRes.error) throw settingsRes.error;
 
   DATA.models = modelsRes.data || [];
-  DATA.profile = profileRes.data;
-  DATA.settings = settingsRes.data;
+  DATA.profile = profileRes.error ? null : profileRes.data;
+  DATA.settings = settingsRes.error ? {downpayment:0} : (settingsRes.data || {downpayment:0});
 
   if(!DATA.models.length){
+    console.error("Tiada model aktif dalam car_models.");
     return;
   }
 
   const modelOptions = DATA.models.map(m =>
-    `<option value="${m.id}">${m.model}</option>`
+    `<option value="${m.id}">${escapeHtml(m.model)}</option>`
   ).join("");
+
   $("modelSelect").innerHTML = modelOptions;
   $("modelTitle").innerHTML = modelOptions;
 
+  // Jangan block render hanya kerana profile/settings belum tersedia.
+  // Model + harga + gambar tetap boleh dipaparkan.
   render();
 }
+
 
 $("modelSelect").addEventListener("change",render);
 $("modelTitle").addEventListener("change",()=>{
