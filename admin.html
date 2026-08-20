@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Login Loan Calculator</title>
+<style>
+body{margin:0;background:#f3f4f6;font-family:Arial;display:flex;align-items:center;justify-content:center;min-height:100vh}
+.card{width:min(92vw,380px);background:white;padding:24px;border-radius:16px;box-shadow:0 10px 35px #0001}
+input,button{width:100%;padding:12px;margin-top:10px;border:1px solid #ddd;border-radius:9px;box-sizing:border-box}
+button{background:#102b67;color:#fff;border:0;font-weight:700;cursor:pointer}
+#msg{margin-top:12px;font-size:13px}
+</style>
+</head>
+<body><div class="card">
+<h2>Loan Calculator</h2>
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button id="login">Login</button>
+<button id="signup" style="background:#555">Daftar Akaun</button>
+<div id="msg"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb=window.supabase.createClient("https://kncyrnxcnugsqffbyzxn.supabase.co","sb_publishable_He_P3in2xYLHzYi1l9cvRQ_VUWlXUEp");
+const msg=document.getElementById("msg");
+login.onclick=async()=>{
+ const {error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});
+ if(error)msg.textContent=error.message;else location.href="index_supabase_connected.html";
+};
+signup.onclick=async()=>{
+ const {error}=await sb.auth.signUp({email:email.value.trim(),password:password.value});
+ msg.textContent=error?error.message:"Akaun berjaya didaftarkan. Semak email jika diperlukan.";
+};
+</script>
+</body></html>
