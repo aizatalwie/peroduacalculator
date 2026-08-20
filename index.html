@@ -117,7 +117,8 @@ body{
   font-size:clamp(17px,2vw,28px);font-weight:700;
 }
 .monthly-number{
-  position:absolute;left:0;right:0;top:24%;
+  position:absolute;left:0;right:0;top:50%;
+  transform:translateY(-50%);
   display:flex;align-items:baseline;justify-content:center;
   color:var(--red);white-space:nowrap;
   width:100%;
@@ -147,6 +148,7 @@ body{
   position:absolute;left:52.5%;right:2.5%;top:8%;bottom:8%;
   display:flex;align-items:center;gap:18px;
   overflow:visible;
+  z-index:5;
 }
 .agent-photo{
   width:clamp(92px,10.8vw,152px);height:clamp(92px,10.8vw,152px);
@@ -161,6 +163,8 @@ body{
   flex-direction:column;
   justify-content:center;
   overflow:visible;
+  position:relative;
+  z-index:6;
 }
 .agent-name{
   font-size:clamp(21px,2.7vw,38px);font-weight:800;
@@ -317,7 +321,6 @@ body{
         <div class="monthly-number">
           <span class="rm">RM</span><span id="lowestAmount" class="amt">761</span>
         </div>
-        <div class="per-month">/sebulan</div>
         <div class="monthly-note">Lebih mudah dimiliki daripada yang anda sangka</div>
       </div>
 
@@ -424,11 +427,13 @@ function render(){
   setPay("p7",p7);
   setPay("p5",p5);
 
-  $("agentName").textContent = DATA.profile.full_name || "";
-  $("agentRole").textContent = DATA.profile.role_name || "";
+  $("agentName").textContent = DATA.profile.full_name || "Nama Agent";
+  $("agentRole").textContent = DATA.profile.role_name || "Sales Advisor";
 
   const tags = String(DATA.profile.tag_line || "").split("|");
-  $("agentTag").innerHTML = (tags[0]||"") + (tags[1] ? "<br>" + tags[1] : "");
+  $("agentTag").innerHTML = tags[0]
+    ? (tags[0] + (tags[1] ? "<br>" + tags[1] : ""))
+    : "Bina Kepercayaan, Bukan<br>Sekadar Jualan.";
 
   if(DATA.profile.photo_url){
     $("agentPhoto").src = DATA.profile.photo_url;
