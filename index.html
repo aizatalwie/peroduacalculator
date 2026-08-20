@@ -400,7 +400,28 @@ function setPay(id,value){
 
 function render(){
   const m = DATA.models.find(x => x.id === $("modelSelect").value) || DATA.models[0];
-  if(!m || !DATA.profile || !DATA.settings) return;
+  if(!m) return;
+
+  // Render model title and car image independently.
+  $("modelTitle").value = m.id;
+  $("modelTitleDisplay").textContent = m.model;
+
+  const carImg = $("carImage");
+  carImg.style.display = "none";
+  carImg.removeAttribute("src");
+
+  if(m.image_url){
+    carImg.onload = function(){
+      this.style.display = "block";
+    };
+    carImg.onerror = function(){
+      this.style.display = "none";
+      console.error("Gagal load gambar kereta:", m.image_url);
+    };
+    carImg.src = m.image_url;
+  }
+
+  if(!DATA.profile || !DATA.settings) return;
 
   const rebate = num($("rebate").value);
   const rate = num($("rate").value);
@@ -414,8 +435,6 @@ function render(){
   const p5 = monthly(loan,rate,5);
   const lowest = Math.min(p9,p7,p5);
 
-  $("modelTitle").value = m.id;
-  $("modelTitleDisplay").textContent = m.model;
   $("modelSelect").value = m.id;
   $("lowestAmount").textContent = Math.round(lowest).toLocaleString("en-MY");
 
@@ -444,21 +463,6 @@ function render(){
   }else{
     $("agentPhoto").removeAttribute("src");
     $("agentPhoto").style.display = "block";
-  }
-
-  const carImg = $("carImage");
-  carImg.style.display = "none";
-  carImg.removeAttribute("src");
-
-  if(m.image_url){
-    carImg.onload = () => {
-      carImg.style.display = "block";
-    };
-    carImg.onerror = () => {
-      carImg.style.display = "none";
-      console.error("Gagal memuat gambar kereta:", m.image_url);
-    };
-    carImg.src = m.image_url;
   }
 
   const wa = String(DATA.profile.whatsapp || "").replace(/\D/g,"");
