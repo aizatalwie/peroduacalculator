@@ -23,11 +23,11 @@ body{
   justify-content:center;
   min-height:100vh;
 }
-.app{width:min(100%,1413px)}
+.app{width:min(100%,1413px);margin:0 auto}
 .poster{
   position:relative;
   width:100%;
-  aspect-ratio:1413/1871;
+  height:calc(100vw * 0.998);min-height:560px;max-height:1420px;
   overflow:hidden;
   background:
     radial-gradient(ellipse at 12% 4%,rgba(224,199,137,.20) 0 3%,transparent 4%),
@@ -173,7 +173,8 @@ body{
 }
 .row-value input{
   width:100%;border:0;background:transparent;outline:0;
-  text-align:right;font:inherit;color:inherit;padding:0;
+  text-align:right;font:inherit;font-weight:700;color:inherit;padding:0;
+  margin:0;min-width:0;
 }
 
 /* TENURE */
@@ -259,6 +260,7 @@ body{
 .status{background:#fff;padding:0 14px 14px;font-size:12px;color:#555}
 .error{color:#b00020}
 .hidden{display:none!important}
+#modelSelect{display:none!important}
 
 @media(max-width:700px){
   .logo{width:72px;height:72px}.logo-mark{width:37px;height:37px}.logo-word{font-size:10px}
@@ -311,7 +313,7 @@ body{
     <section class="details">
       <div class="row"><div class="row-label">Harga Kereta</div><div id="price" class="row-value">RM0</div></div>
       <div class="row"><div class="row-label">Rebate</div><div class="row-value"><input id="rebate" class="front-input" value="RM0" inputmode="numeric"></div></div>
-      <div class="row"><div class="row-label">Downpayment Selepas Rebate</div><div id="down" class="row-value">RM0</div></div>
+      <div class="row"><div class="row-label">Downpayment Selepas Rebate</div><div class="row-value"><input id="down" class="front-input" value="RM0" inputmode="numeric"></div></div>
       <div class="row"><div class="row-label">Insuran (Anggaran)</div><div id="insurance" class="row-value">RM0</div></div>
       <div class="row"><div class="row-label">Jumlah Loan (Anggaran)</div><div id="loan" class="row-value">RM0</div></div>
       <div class="row"><div class="row-label">Kadar Faedah (Anggaran)</div><div class="row-value"><input id="rate" class="front-input" value="2.55%" inputmode="decimal"></div></div>
@@ -346,22 +348,6 @@ body{
     </a>
 
   </main>
-
-  <div id="controls" class="controls hidden">
-    <div class="full">
-      <label>Pilih Model</label>
-      <select id="modelSelect"></select>
-    </div>
-    <div class="full">
-      <label>Rebate (boleh ubah)</label>
-      <input id="rebateControl" value="0" inputmode="numeric">
-    </div>
-    <div class="full">
-      <label>Kadar Faedah % (boleh ubah)</label>
-      <input id="rateControl" value="2.55" inputmode="decimal">
-    </div>
-  </div>
-  <div id="status" class="status">Memuatkan...</div>
 </div>
 
 <script>
@@ -387,9 +373,9 @@ function render(){
   const m = DATA.models.find(x => x.id === $("modelSelect").value) || DATA.models[0];
   if(!m || !DATA.profile || !DATA.settings) return;
 
-  const rebate = num($("rebateControl").value);
-  const rate = num($("rateControl").value);
-  const down = Number(DATA.settings.downpayment) || 0;
+  const rebate = num($("rebate").value);
+  const rate = num($("rate").value);
+  const down = num($("down").value) || Number(DATA.settings.downpayment) || 0;
   const price = Number(m.price) || 0;
   const insurance = Number(m.insurance) || 0;
 
@@ -405,7 +391,7 @@ function render(){
 
   $("price").textContent = money(price);
   $("rebate").value = money(rebate);
-  $("down").textContent = money(down);
+  $("down").value = money(down);
   $("insurance").textContent = money(insurance);
   $("loan").textContent = money(loan);
   $("rate").value = rate.toFixed(2) + "%";
@@ -444,13 +430,12 @@ function render(){
 }
 
 async function loadData(){
-  $("status").textContent = "Menyemak akaun...";
+
 
   const {data:{user},error:userError} = await sb.auth.getUser();
   if(userError) throw userError;
 
   if(!user){
-    $("status").textContent = "Sila login dahulu.";
     return;
   }
 
@@ -481,7 +466,6 @@ async function loadData(){
   DATA.settings = settingsRes.data;
 
   if(!DATA.models.length){
-    $("status").textContent = "Tiada model aktif dalam database.";
     return;
   }
 
@@ -490,10 +474,6 @@ async function loadData(){
   ).join("");
   $("modelSelect").innerHTML = modelOptions;
   $("modelTitle").innerHTML = modelOptions;
-
-  $("controls").classList.remove("hidden");
-  $("status").textContent = "Log masuk sebagai " +
-    (DATA.profile.full_name || user.email || "User");
 
   render();
 }
@@ -504,29 +484,11 @@ $("modelTitle").addEventListener("change",()=>{
   render();
 });
 
-$("rebateControl").addEventListener("input",()=>{
-  $("rebate").value = money(num($("rebateControl").value));
-  render();
-});
-$("rateControl").addEventListener("input",()=>{
-  $("rate").value = num($("rateControl").value).toFixed(2) + "%";
-  render();
-});
+$("rebate").addEventListener("input",render);
+$("down").addEventListener("input",render);
+$("rate").addEventListener("input",render);
 
-$("rebate").addEventListener("input",()=>{
-  $("rebateControl").value = num($("rebate").value);
-  render();
-});
-$("rate").addEventListener("input",()=>{
-  $("rateControl").value = num($("rate").value);
-  render();
-});
-
-loadData().catch(err=>{
-  console.error(err);
-  $("status").innerHTML =
-    '<span class="error">Ralat: ' + (err.message || err) + '</span>';
-});
+loadData().catch(err=>{ console.error(err); });
 </script>
 </body>
 </html>
