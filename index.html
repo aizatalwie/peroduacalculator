@@ -27,7 +27,8 @@ body{
 .poster{
   position:relative;
   width:100%;
-  height:calc(100vw * 0.998);min-height:560px;max-height:1420px;
+  aspect-ratio:1413/1871;
+  min-height:0;
   overflow:hidden;
   background:
     radial-gradient(ellipse at 12% 4%,rgba(224,199,137,.20) 0 3%,transparent 4%),
@@ -283,7 +284,8 @@ body{
 
     <div class="kicker">KIRAAN LOAN KENDERAAN</div>
     <div class="accent"></div>
-    <select id="modelTitle" class="title title-select" aria-label="Pilih model kereta"></select>
+    <div id="modelTitleDisplay" class="title title-display">Perodua Alza 1.5L X</div>
+<select id="modelTitle" class="title title-select-overlay" aria-label="Pilih model kereta"></select>
 <div class="car-zone">
       <img id="carImage" alt="Gambar kereta">
     </div>
@@ -301,7 +303,7 @@ body{
       <div class="vline"></div>
 
       <div class="agent">
-        <img id="agentPhoto" class="agent-photo" alt="Gambar ejen">
+        <img id="agentPhoto" class="agent-photo" alt="">
         <div class="agent-info">
           <div id="agentName" class="agent-name"></div>
           <div id="agentRole" class="agent-role"></div>
@@ -386,6 +388,7 @@ function render(){
   const lowest = Math.min(p9,p7,p5);
 
   $("modelTitle").value = m.id;
+  $("modelTitleDisplay").textContent = m.model;
   $("modelSelect").value = m.id;
   $("lowestAmount").textContent = Math.round(lowest).toLocaleString("en-MY");
 
