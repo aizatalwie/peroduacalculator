@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiraan Loan Kenderaan</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --navy:#102a68;
+  --navy2:#183878;
+  --red:#c91d25;
+  --line:#a7a7a7;
+  --yellow:#ffe15a;
+  --text:#111;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#e9ebef}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  display:flex;
+  justify-content:center;
+  min-height:100vh;
+}
+.app{width:min(100%,1413px);margin:0 auto}
+.poster{
+  position:relative;
+  width:100%;
+  height:calc(100vw * 0.998);min-height:560px;max-height:1420px;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse at 12% 4%,rgba(224,199,137,.20) 0 3%,transparent 4%),
+    radial-gradient(ellipse at 82% 18%,rgba(224,199,137,.13) 0 4%,transparent 5%),
+    linear-gradient(135deg,#fff 0%,#fdfdfc 48%,#f7f7f6 100%);
+}
+.poster:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  opacity:.22;
+  background:
+    linear-gradient(132deg,transparent 0 16%,rgba(205,205,205,.8) 17%,transparent 19% 34%,rgba(221,194,126,.65) 35%,transparent 37% 62%,rgba(205,205,205,.6) 63%,transparent 65%),
+    linear-gradient(32deg,transparent 0 58%,rgba(214,190,130,.45) 59%,transparent 62%),
+    linear-gradient(160deg,transparent 0 74%,rgba(205,205,205,.55) 75%,transparent 78%);
+  pointer-events:none;
+}
+
+/* HEADER */
+.kicker{
+  position:absolute;left:5.7%;top:2.0%;
+  font-size:clamp(16px,2vw,29px);
+  line-height:1;font-weight:700;letter-spacing:.1px;
+}
+.accent{
+  position:absolute;left:5.7%;top:3.75%;
+  width:58px;height:4px;background:var(--red);
+}
+.title{
+  position:absolute;left:5.5%;top:4.25%;
+  width:70%;font-size:clamp(35px,5.15vw,72px);
+  line-height:.98;font-weight:800;color:#07184b;
+  letter-spacing:-1.5px;white-space:nowrap;
+}
+.title-select{
+  appearance:none;-webkit-appearance:none;
+  border:0;outline:0;background:transparent;
+  padding:0;cursor:pointer;
+  font-family:Arial,Helvetica,sans-serif;
+}
+.logo{
+  position:absolute;right:5.5%;top:2.1%;
+  width:112px;height:112px;border:1px solid #cfcfcf;
+  border-radius:15px;background:#fff;
+  box-shadow:0 3px 10px rgba(0,0,0,.13);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.logo-mark{
+  width:58px;height:58px;border-radius:50%;
+  border:3px solid #ddd;position:relative;
+  background:linear-gradient(145deg,#13aa58 0 46%,#d82e38 47% 65%,#fff 66%);
+  box-shadow:inset 0 0 0 2px #fff;
+}
+.logo-mark:after{
+  content:"P";position:absolute;inset:0;display:grid;place-items:center;
+  color:#fff;font-size:30px;font-weight:900;text-shadow:0 1px 2px #555;
+}
+.logo-word{font-size:15px;font-weight:800;margin-top:5px}
+
+/* CAR */
+.car-zone{
+  position:absolute;left:8%;right:8%;top:10.1%;height:18.5%;
+  display:flex;align-items:center;justify-content:center;
+}
+.car-zone img{
+  width:100%;height:100%;object-fit:contain;display:none;
+}
+
+/* MONTHLY + PROFILE */
+.monthly{
+  position:absolute;left:4.5%;right:4.5%;top:30.0%;height:12.6%;
+  border:2px solid #a4a4a4;border-radius:28px;background:rgba(255,255,255,.95);
+}
+.monthly-left{
+  position:absolute;left:5.5%;top:9%;width:42.5%;height:82%;
+}
+.monthly-label{
+  font-size:clamp(17px,2vw,28px);font-weight:700;
+}
+.monthly-number{
+  position:absolute;left:0;right:0;top:24%;
+  display:flex;align-items:baseline;justify-content:center;
+  color:var(--red);white-space:nowrap;
+}
+.monthly-number .rm{
+  font-size:clamp(27px,3.5vw,50px);font-weight:700;margin-right:8px;
+}
+.monthly-number .amt{
+  font-size:clamp(54px,7.2vw,104px);font-weight:800;
+  letter-spacing:-4px;line-height:.9;
+}
+.per-month{
+  position:absolute;left:72%;top:64%;
+  font-size:clamp(14px,1.65vw,23px);font-weight:500;
+  white-space:nowrap;
+}
+.monthly-note{
+  position:absolute;left:0;bottom:5%;
+  font-size:clamp(11px,1.45vw,20px);font-weight:700;
+}
+.vline{
+  position:absolute;left:50%;top:10%;bottom:10%;width:2px;background:#aaa;
+}
+.agent{
+  position:absolute;left:52.5%;right:2.5%;top:8%;bottom:8%;
+  display:flex;align-items:center;gap:18px;
+}
+.agent-photo{
+  width:clamp(92px,10.8vw,152px);height:clamp(92px,10.8vw,152px);
+  border-radius:50%;border:2px solid #777;object-fit:cover;
+  display:block;flex:none;background:#fff;
+}
+.agent-info{min-width:0}
+.agent-name{
+  font-size:clamp(21px,2.7vw,38px);font-weight:800;
+  line-height:1.05;white-space:nowrap;
+}
+.agent-role{
+  font-size:clamp(13px,1.5vw,21px);margin-top:8px;white-space:nowrap;
+}
+.agent-tag{
+  font-size:clamp(13px,1.5vw,21px);line-height:1.35;
+  color:#a8171b;font-weight:700;margin-top:12px;
+}
+
+/* DETAILS */
+.details{
+  position:absolute;left:4.5%;right:4.5%;top:42.8%;height:15.4%;
+  border:2px solid #a4a4a4;border-radius:25px;overflow:hidden;
+  background:rgba(255,255,255,.96);
+}
+.row{
+  height:16.6667%;display:flex;align-items:center;
+  border-bottom:1px solid #aaa;padding:0 4.5%;
+}
+.row:last-child{border-bottom:0}
+.row-label{
+  font-size:clamp(14px,1.7vw,24px);font-weight:600;line-height:1;
+}
+.row-value{
+  margin-left:auto;min-width:190px;text-align:right;
+  font-size:clamp(14px,1.7vw,24px);font-weight:700;
+}
+.row-value input{
+  width:100%;border:0;background:transparent;outline:0;
+  text-align:right;font:inherit;font-weight:700;color:inherit;padding:0;
+  margin:0;min-width:0;
+}
+
+/* TENURE */
+.tenure{
+  position:absolute;left:4.5%;right:4.5%;top:58.55%;height:12.15%;
+  border:2px solid #a4a4a4;border-radius:25px;overflow:hidden;
+  background:rgba(255,255,255,.97);
+}
+.tenure-row{
+  height:26.2%;display:flex;align-items:center;
+  border-bottom:1px solid #aaa;
+}
+.year-box{
+  height:82%;width:29%;margin-left:2.0%;
+  background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(18px,2.15vw,30px);font-weight:800;
+}
+.cal-icon{
+  width:45px;height:45px;margin:0 18px;
+  border:3px solid #fff;border-radius:5px;position:relative;flex:none;
+}
+.cal-icon:before{
+  content:"";position:absolute;left:5px;right:5px;top:10px;
+  height:3px;background:#fff;box-shadow:0 8px 0 #fff,0 16px 0 #fff;
+}
+.pay{
+  position:absolute;left:50%;transform:translateX(-50%);
+  width:30%;text-align:center;
+  color:var(--red);font-size:clamp(20px,2.65vw,38px);font-weight:800;
+  white-space:nowrap;display:flex;align-items:baseline;justify-content:center;gap:7px;
+}
+.pay .unit{
+  color:#111;font-size:clamp(13px,1.55vw,21px);
+  font-weight:400;margin-left:0;
+}
+.lowest-badge{
+  position:absolute;right:2%;width:21%;margin:0;padding:8px 10px;
+  background:var(--yellow);border:2px solid #111;border-radius:25px;
+  text-align:center;font-size:clamp(11px,1.3vw,18px);font-weight:700;
+  white-space:nowrap;
+}
+.tenure-note{
+  height:21.4%;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(10px,1.3vw,18px);font-style:italic;font-weight:600;
+  padding:0 12px;text-align:center;white-space:nowrap;
+}
+
+/* WHATSAPP */
+.wa{
+  position:absolute;left:5%;right:5%;top:71.15%;height:4.55%;
+  background:var(--navy);border:2px solid #111;border-radius:18px;
+  color:#fff;display:flex;align-items:center;text-decoration:none;
+}
+.wa-icon{
+  margin-left:4%;width:50px;height:50px;border-radius:13px;
+  background:#25d366;display:grid;place-items:center;
+  color:#fff;flex:none;
+}
+.wa-icon svg{width:36px;height:36px;display:block}
+.wa-label{
+  margin-left:2%;font-size:clamp(20px,2.55vw,35px);font-weight:800;
+  white-space:nowrap;
+}
+.wa-divider{position:absolute;left:50%;top:19%;height:62%;width:2px;background:#fff;margin:0;transform:translateX(-50%)}
+.wa-number{
+  position:absolute;left:57%;right:5%;text-align:center;
+  font-size:clamp(22px,3.1vw,44px);
+  font-weight:800;letter-spacing:1px;white-space:nowrap;
+}
+
+/* CONTROLS */
+.controls{
+  background:#fff;padding:14px;display:grid;
+  grid-template-columns:1fr 1fr;gap:12px;
+}
+.controls .full{grid-column:1/-1}
+.controls label{display:block;font-size:12px;font-weight:700;color:#555}
+.controls input,.controls select{
+  width:100%;margin-top:5px;padding:11px;
+  border:1px solid #d4d8df;border-radius:9px;font-size:15px;
+}
+.status{background:#fff;padding:0 14px 14px;font-size:12px;color:#555}
+.error{color:#b00020}
+.hidden{display:none!important}
+#modelSelect{display:none!important}
+
+@media(max-width:700px){
+  .logo{width:72px;height:72px}.logo-mark{width:37px;height:37px}.logo-word{font-size:10px}
+  .agent{gap:8px}.agent-photo{width:68px;height:68px}
+  .agent-name{font-size:clamp(16px,4vw,24px)}
+  .agent-role,.agent-tag{font-size:clamp(10px,2.4vw,15px)}
+  .cal-icon{width:31px;height:31px;margin:0 9px;border-width:2px}
+  .year-box{width:31%}
+  .lowest-badge{padding:5px 6px}
+  .wa-icon{width:34px;height:34px}.wa-icon svg{width:25px;height:25px}
+  .wa-label{font-size:clamp(15px,3.7vw,24px)}
+  .wa-number{font-size:clamp(15px,4vw,27px);left:56%;right:4%}
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+  <main class="poster">
+
+    <div class="kicker">KIRAAN LOAN KENDERAAN</div>
+    <div class="accent"></div>
+    <select id="modelTitle" class="title title-select" aria-label="Pilih model kereta"></select>
+<div class="car-zone">
+      <img id="carImage" alt="Gambar kereta">
+    </div>
+
+    <section class="monthly">
+      <div class="monthly-left">
+        <div class="monthly-label">Bulanan Serendah</div>
+        <div class="monthly-number">
+          <span class="rm">RM</span><span id="lowestAmount" class="amt">761</span>
+        </div>
+        <div class="per-month">/sebulan</div>
+        <div class="monthly-note">Lebih mudah dimiliki daripada yang anda sangka</div>
+      </div>
+
+      <div class="vline"></div>
+
+      <div class="agent">
+        <img id="agentPhoto" class="agent-photo" alt="Gambar ejen">
+        <div class="agent-info">
+          <div id="agentName" class="agent-name"></div>
+          <div id="agentRole" class="agent-role"></div>
+          <div id="agentTag" class="agent-tag"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="details">
+      <div class="row"><div class="row-label">Harga Kereta</div><div id="price" class="row-value">RM0</div></div>
+      <div class="row"><div class="row-label">Rebate</div><div class="row-value"><input id="rebate" class="front-input" value="RM0" inputmode="numeric"></div></div>
+      <div class="row"><div class="row-label">Downpayment Selepas Rebate</div><div class="row-value"><input id="down" class="front-input" value="RM0" inputmode="numeric"></div></div>
+      <div class="row"><div class="row-label">Insuran (Anggaran)</div><div id="insurance" class="row-value">RM0</div></div>
+      <div class="row"><div class="row-label">Jumlah Loan (Anggaran)</div><div id="loan" class="row-value">RM0</div></div>
+      <div class="row"><div class="row-label">Kadar Faedah (Anggaran)</div><div class="row-value"><input id="rate" class="front-input" value="2.55%" inputmode="decimal"></div></div>
+    </section>
+
+    <section class="tenure">
+      <div class="tenure-row">
+        <div class="year-box"><div class="cal-icon"></div>9 Tahun</div>
+        <div id="p9" class="pay">RM0<span class="unit">/bulan</span></div>
+        <div class="lowest-badge">Bayaran paling rendah</div>
+      </div>
+      <div class="tenure-row">
+        <div class="year-box"><div class="cal-icon"></div>7 Tahun</div>
+        <div id="p7" class="pay">RM0<span class="unit">/bulan</span></div>
+      </div>
+      <div class="tenure-row">
+        <div class="year-box"><div class="cal-icon"></div>5 Tahun</div>
+        <div id="p5" class="pay">RM0<span class="unit">/bulan</span></div>
+      </div>
+      <div class="tenure-note">*Hak semak kelayakan? Semak kelayakan sekarang sebelum Promosi terkini tamat</div>
+    </section>
+
+    <a id="waLink" class="wa" href="#" target="_blank" rel="noopener">
+      <div class="wa-icon" aria-label="WhatsApp">
+  <svg viewBox="0 0 32 32" aria-hidden="true">
+    <path fill="#fff" d="M16 3.5a12.4 12.4 0 0 0-10.7 19l-1.4 5 5.1-1.3A12.5 12.5 0 1 0 16 3.5Zm0 22.7c-2 0-3.9-.6-5.5-1.7l-.4-.2-3 .8.8-2.9-.3-.4a9.8 9.8 0 1 1 8.4 4.4Zm5.4-7.3c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1c-.3-.2-1.3-.5-2.5-1.6-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.2-.7l.5-.6c.2-.2.2-.4.3-.6 0-.2 0-.4-.1-.6-.1-.2-.7-1.7-.9-2.3-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.7s1.1 3.1 1.2 3.3c.2.2 2.2 3.4 5.4 4.8.8.3 1.4.5 1.9.7.8.2 1.5.2 2.1.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.3-.6-.4Z"/>
+  </svg>
+</div>
+      <div class="wa-label">WhatsApp Saya Sekarang</div>
+      <div class="wa-divider"></div>
+      <div id="waNumber" class="wa-number"></div>
+    </a>
+
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = "https://kncyrnxcnugsqffbyzxn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_He_P3in2xYLHzYi1l9cvRQ_VUWlXUEp";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const DATA = {models:[],profile:null,settings:null};
+const $ = id => document.getElementById(id);
+const money = n => "RM" + Math.round(Number(n)||0).toLocaleString("en-MY");
+const num = v => Number(String(v).replace(/[^0-9.-]/g,"")) || 0;
+
+function monthly(loan, rate, years){
+  return loan * (1 + (rate/100) * years) / (years * 12);
+}
+
+function setPay(id,value){
+  $(id).innerHTML = "RM" + Math.round(value).toLocaleString("en-MY") +
+    '<span class="unit">/bulan</span>';
+}
+
+function render(){
+  const m = DATA.models.find(x => x.id === $("modelSelect").value) || DATA.models[0];
+  if(!m || !DATA.profile || !DATA.settings) return;
+
+  const rebate = num($("rebate").value);
+  const rate = num($("rate").value);
+  const down = num($("down").value) || Number(DATA.settings.downpayment) || 0;
+  const price = Number(m.price) || 0;
+  const insurance = Number(m.insurance) || 0;
+
+  const loan = Math.max(0, price + insurance - rebate - down);
+  const p9 = monthly(loan,rate,9);
+  const p7 = monthly(loan,rate,7);
+  const p5 = monthly(loan,rate,5);
+  const lowest = Math.min(p9,p7,p5);
+
+  $("modelTitle").value = m.id;
+  $("modelSelect").value = m.id;
+  $("lowestAmount").textContent = Math.round(lowest).toLocaleString("en-MY");
+
+  $("price").textContent = money(price);
+  $("rebate").value = money(rebate);
+  $("down").value = money(down);
+  $("insurance").textContent = money(insurance);
+  $("loan").textContent = money(loan);
+  $("rate").value = rate.toFixed(2) + "%";
+
+  setPay("p9",p9);
+  setPay("p7",p7);
+  setPay("p5",p5);
+
+  $("agentName").textContent = DATA.profile.full_name || "";
+  $("agentRole").textContent = DATA.profile.role_name || "";
+
+  const tags = String(DATA.profile.tag_line || "").split("|");
+  $("agentTag").innerHTML = (tags[0]||"") + (tags[1] ? "<br>" + tags[1] : "");
+
+  if(DATA.profile.photo_url){
+    $("agentPhoto").src = DATA.profile.photo_url;
+    $("agentPhoto").style.display = "block";
+  }else{
+    $("agentPhoto").removeAttribute("src");
+    $("agentPhoto").style.display = "block";
+  }
+
+  if(m.image_url){
+    $("carImage").src = m.image_url;
+    $("carImage").style.display = "block";
+  }else{
+    $("carImage").style.display = "none";
+  }
+
+  const wa = String(DATA.profile.whatsapp || "").replace(/\D/g,"");
+  $("waNumber").textContent = DATA.profile.whatsapp || "";
+  $("waLink").href = wa
+    ? "https://wa.me/" + (wa.startsWith("0") ? "60"+wa.slice(1) : wa) +
+      "?text=" + encodeURIComponent("Salam, saya berminat dengan " + m.model + ". Boleh semak kelayakan loan saya?")
+    : "#";
+}
+
+async function loadData(){
+
+
+  const {data:{user},error:userError} = await sb.auth.getUser();
+  if(userError) throw userError;
+
+  if(!user){
+    return;
+  }
+
+  const [modelsRes,profileRes,settingsRes] = await Promise.all([
+    sb.from("car_models")
+      .select("id,model,price,insurance,image_url,is_active,sort_order")
+      .eq("is_active",true)
+      .order("sort_order",{ascending:true})
+      .order("model",{ascending:true}),
+
+    sb.from("profiles")
+      .select("id,full_name,photo_url,role_name,tag_line,whatsapp")
+      .eq("id",user.id)
+      .single(),
+
+    sb.from("calculator_settings")
+      .select("user_id,downpayment")
+      .eq("user_id",user.id)
+      .single()
+  ]);
+
+  if(modelsRes.error) throw modelsRes.error;
+  if(profileRes.error) throw profileRes.error;
+  if(settingsRes.error) throw settingsRes.error;
+
+  DATA.models = modelsRes.data || [];
+  DATA.profile = profileRes.data;
+  DATA.settings = settingsRes.data;
+
+  if(!DATA.models.length){
+    return;
+  }
+
+  const modelOptions = DATA.models.map(m =>
+    `<option value="${m.id}">${m.model}</option>`
+  ).join("");
+  $("modelSelect").innerHTML = modelOptions;
+  $("modelTitle").innerHTML = modelOptions;
+
+  render();
+}
+
+$("modelSelect").addEventListener("change",render);
+$("modelTitle").addEventListener("change",()=>{
+  $("modelSelect").value = $("modelTitle").value;
+  render();
+});
+
+$("rebate").addEventListener("input",render);
+$("down").addEventListener("input",render);
+$("rate").addEventListener("input",render);
+
+loadData().catch(err=>{ console.error(err); });
+</script>
+</body>
+</html>
