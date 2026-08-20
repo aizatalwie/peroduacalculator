@@ -3,34 +3,414 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Login Loan Calculator</title>
+<title>Admin Loan Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-body{margin:0;background:#f3f4f6;font-family:Arial;display:flex;align-items:center;justify-content:center;min-height:100vh}
-.card{width:min(92vw,380px);background:white;padding:24px;border-radius:16px;box-shadow:0 10px 35px #0001}
-input,button{width:100%;padding:12px;margin-top:10px;border:1px solid #ddd;border-radius:9px;box-sizing:border-box}
-button{background:#102b67;color:#fff;border:0;font-weight:700;cursor:pointer}
+:root{
+  --navy:#102a68;
+  --red:#c91d25;
+  --bg:#f3f4f6;
+  --line:#d9dde5;
+  --text:#111;
+  --muted:#667085;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--text)}
+button,input,select{font:inherit}
+.hidden{display:none!important}
+
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-card,.dashboard{width:min(1100px,94vw)}
+.auth-card{max-width:390px;background:#fff;padding:26px;border-radius:18px;box-shadow:0 10px 35px #0001}
+.auth-card h1{margin:0 0 8px;font-size:25px}
+.auth-card p{margin:0 0 18px;color:var(--muted);font-size:14px}
+.field{margin-bottom:12px}
+label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:5px}
+input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+button{border:0;border-radius:9px;padding:11px 15px;cursor:pointer;font-weight:700}
+.primary{background:var(--navy);color:#fff}
+.secondary{background:#eef1f6;color:#111}
+.danger{background:#fee4e2;color:#b42318}
 #msg{margin-top:12px;font-size:13px}
+
+.dashboard-wrap{padding:24px 0 50px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:18px}
+.topbar h1{margin:0;font-size:25px}
+.topbar .user{font-size:12px;color:var(--muted);margin-top:4px}
+.actions{display:flex;gap:8px}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:#fff;border-radius:16px;border:1px solid #e3e6eb;padding:20px;box-shadow:0 5px 20px #00000008}
+.card.full{grid-column:1/-1}
+.card h2{margin:0 0 4px;font-size:18px}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+.profile-grid{display:grid;grid-template-columns:150px 1fr;gap:18px}
+.preview{display:flex;flex-direction:column;align-items:center;gap:8px}
+.avatar{width:120px;height:120px;border-radius:50%;border:2px solid #aaa;object-fit:cover;background:#fff}
+.preview small{font-size:11px;color:var(--muted);text-align:center}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.save-row{display:flex;justify-content:flex-end;margin-top:14px}
+
+.models-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:middle}
+th{font-size:11px;text-transform:uppercase;color:#667085;background:#f8fafc}
+.thumb{width:58px;height:42px;border-radius:7px;object-fit:cover;background:#f2f4f7;border:1px solid var(--line)}
+.row-actions{display:flex;gap:6px}
+.row-actions button{padding:7px 9px;font-size:12px}
+
+.modal-backdrop{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal{width:min(620px,96vw);background:#fff;border-radius:16px;padding:20px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-head h3{margin:0}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
+.notice{padding:10px 12px;border-radius:9px;background:#f8fafc;color:#475467;font-size:12px;margin-top:12px}
+.status{font-size:12px;margin-top:12px}
+.ok{color:#067647}.err{color:#b42318}
+
+@media(max-width:760px){
+  .dashboard-wrap{padding:15px 0 35px}
+  .grid{grid-template-columns:1fr}
+  .card.full{grid-column:auto}
+  .profile-grid{grid-template-columns:1fr}
+  .preview{align-items:flex-start}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid .full{grid-column:auto}
+  .topbar{align-items:flex-start;flex-direction:column}
+}
 </style>
 </head>
-<body><div class="card">
-<h2>Loan Calculator</h2>
-<input id="email" type="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-<button id="login">Login</button>
-<button id="signup" style="background:#555">Daftar Akaun</button>
-<div id="msg"></div>
+<body>
+
+<div id="authView" class="auth-wrap">
+  <div class="auth-card">
+    <h1>Loan Calculator</h1>
+    <p>Login untuk mengurus profile dan model kereta anda.</p>
+    <div class="field"><label>Email</label><input id="email" type="email" placeholder="Email"></div>
+    <div class="field"><label>Password</label><input id="password" type="password" placeholder="Password"></div>
+    <button id="login" class="primary" style="width:100%">Login</button>
+    <button id="signup" class="secondary" style="width:100%;margin-top:8px">Daftar Akaun</button>
+    <div id="msg"></div>
+  </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<div id="appView" class="dashboard-wrap hidden">
+  <div class="dashboard">
+    <div class="topbar">
+      <div>
+        <h1>Admin Dashboard</h1>
+        <div id="loggedUser" class="user"></div>
+      </div>
+      <div class="actions">
+        <button id="refresh" class="secondary">Refresh</button>
+        <button id="logout" class="danger">Logout</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Profile Agent</h2>
+        <div class="sub">Maklumat ini akan dipaparkan pada index anda.</div>
+        <div class="profile-grid">
+          <div class="preview">
+            <img id="avatarPreview" class="avatar" alt="Profile">
+            <small>URL gambar profile</small>
+            <input id="photoUrl" placeholder="https://...">
+          </div>
+          <div>
+            <div class="form-grid">
+              <div><label>Nama Agent</label><input id="fullName" placeholder="Nama Agent"></div>
+              <div><label>Role / Sales Advisor</label><input id="roleName" placeholder="Sales Advisor"></div>
+              <div class="full"><label>Tagline</label><input id="tagLine" placeholder="Bina Kepercayaan, Bukan|Sekadar Jualan."></div>
+              <div class="full"><label>No. WhatsApp</label><input id="whatsapp" placeholder="0173469902"></div>
+            </div>
+            <div class="save-row"><button id="saveProfile" class="primary">Simpan Profile</button></div>
+          </div>
+        </div>
+        <div id="profileStatus" class="status"></div>
+      </section>
+
+      <section class="card">
+        <h2>Settings</h2>
+        <div class="sub">Tetapan default calculator anda.</div>
+        <div class="field">
+          <label>Downpayment Default</label>
+          <input id="defaultDown" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="save-row"><button id="saveSettings" class="primary">Simpan Settings</button></div>
+        <div class="notice">Rebate dan kadar faedah boleh diubah terus pada frontend index.</div>
+        <div id="settingsStatus" class="status"></div>
+      </section>
+
+      <section class="card full">
+        <div class="models-head">
+          <div>
+            <h2>Model Kereta</h2>
+            <div class="sub" style="margin-bottom:0">Harga, insurans dan gambar model digunakan oleh index.</div>
+          </div>
+          <button id="addModel" class="primary">+ Tambah Model</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Gambar</th><th>Model</th><th>Harga</th><th>Insurans</th><th>Status</th><th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="modelsBody"></tbody>
+          </table>
+        </div>
+        <div id="modelsStatus" class="status"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Tambah Model</h3>
+      <button id="closeModal" class="secondary">Tutup</button>
+    </div>
+    <div class="form-grid">
+      <div class="full"><label>Nama Model</label><input id="modelName" placeholder="Perodua Alza 1.5L X"></div>
+      <div><label>Harga Kereta</label><input id="modelPrice" inputmode="numeric" placeholder="64791"></div>
+      <div><label>Insurans</label><input id="modelInsurance" inputmode="numeric" placeholder="2020"></div>
+      <div class="full"><label>URL Gambar Kereta</label><input id="modelImage" placeholder="https://..."></div>
+      <div><label>Status</label><select id="modelActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+      <div><label>Susunan</label><input id="modelSort" inputmode="numeric" placeholder="1"></div>
+    </div>
+    <div class="modal-actions">
+      <button id="cancelModal" class="secondary">Batal</button>
+      <button id="saveModel" class="primary">Simpan Model</button>
+    </div>
+    <div id="modelStatus" class="status"></div>
+  </div>
+</div>
+
 <script>
-const sb=window.supabase.createClient("https://kncyrnxcnugsqffbyzxn.supabase.co","sb_publishable_He_P3in2xYLHzYi1l9cvRQ_VUWlXUEp");
-const msg=document.getElementById("msg");
-login.onclick=async()=>{
- const {error}=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});
- if(error)msg.textContent=error.message;else location.href="index.html";
+const SUPABASE_URL="https://kncyrnxcnugsqffbyzxn.supabase.co";
+const SUPABASE_KEY="sb_publishable_He_P3in2xYLHzYi1l9cvRQ_VUWlXUEp";
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const $=id=>document.getElementById(id);
+let currentUser=null;
+let editingModelId=null;
+
+function money(n){
+  return "RM"+Math.round(Number(n)||0).toLocaleString("en-MY");
+}
+function num(v){
+  return Number(String(v).replace(/[^0-9.-]/g,""))||0;
+}
+function setStatus(id,text,ok=false){
+  $(id).textContent=text||"";
+  $(id).className="status "+(ok?"ok":"err");
+}
+function showAuth(){
+  $("authView").classList.remove("hidden");
+  $("appView").classList.add("hidden");
+}
+function showApp(){
+  $("authView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+}
+
+async function loadProfile(){
+  const {data,error}=await sb.from("profiles")
+    .select("id,full_name,photo_url,role_name,tag_line,whatsapp")
+    .eq("id",currentUser.id).single();
+
+  if(error){
+    setStatus("profileStatus",error.message);
+    return;
+  }
+  $("fullName").value=data?.full_name||"";
+  $("photoUrl").value=data?.photo_url||"";
+  $("roleName").value=data?.role_name||"";
+  $("tagLine").value=data?.tag_line||"";
+  $("whatsapp").value=data?.whatsapp||"";
+  updateAvatar();
+}
+
+async function loadSettings(){
+  const {data,error}=await sb.from("calculator_settings")
+    .select("user_id,downpayment")
+    .eq("user_id",currentUser.id).single();
+
+  if(error){
+    setStatus("settingsStatus",error.message);
+    return;
+  }
+  $("defaultDown").value=data?.downpayment??0;
+}
+
+async function loadModels(){
+  const {data,error}=await sb.from("car_models")
+    .select("id,model,price,insurance,image_url,is_active,sort_order")
+    .order("sort_order",{ascending:true})
+    .order("model",{ascending:true});
+
+  if(error){
+    setStatus("modelsStatus",error.message);
+    return;
+  }
+
+  const rows=data||[];
+  $("modelsBody").innerHTML=rows.length?rows.map(m=>`
+    <tr>
+      <td>${m.image_url?`<img class="thumb" src="${escapeHtml(m.image_url)}" alt="">`:"—"}</td>
+      <td><b>${escapeHtml(m.model||"")}</b></td>
+      <td>${money(m.price)}</td>
+      <td>${money(m.insurance)}</td>
+      <td>${m.is_active?"Active":"Inactive"}</td>
+      <td>
+        <div class="row-actions">
+          <button class="secondary" onclick="editModel('${m.id}')">Edit</button>
+          <button class="danger" onclick="deleteModel('${m.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join(""):`<tr><td colspan="6">Tiada model.</td></tr>`;
+}
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+function updateAvatar(){
+  const url=$("photoUrl").value.trim();
+  $("avatarPreview").src=url||"";
+}
+async function saveProfile(){
+  setStatus("profileStatus","Menyimpan...",true);
+  const payload={
+    id:currentUser.id,
+    full_name:$("fullName").value.trim(),
+    photo_url:$("photoUrl").value.trim(),
+    role_name:$("roleName").value.trim(),
+    tag_line:$("tagLine").value.trim(),
+    whatsapp:$("whatsapp").value.trim()
+  };
+  const {error}=await sb.from("profiles").upsert(payload,{onConflict:"id"});
+  if(error){setStatus("profileStatus",error.message);return;}
+  setStatus("profileStatus","Profile berjaya disimpan.",true);
+}
+async function saveSettings(){
+  setStatus("settingsStatus","Menyimpan...",true);
+  const payload={user_id:currentUser.id,downpayment:num($("defaultDown").value)};
+  const {error}=await sb.from("calculator_settings").upsert(payload,{onConflict:"user_id"});
+  if(error){setStatus("settingsStatus",error.message);return;}
+  setStatus("settingsStatus","Settings berjaya disimpan.",true);
+}
+
+function openModal(model=null){
+  editingModelId=model?.id||null;
+  $("modalTitle").textContent=editingModelId?"Edit Model":"Tambah Model";
+  $("modelName").value=model?.model||"";
+  $("modelPrice").value=model?.price??"";
+  $("modelInsurance").value=model?.insurance??"";
+  $("modelImage").value=model?.image_url||"";
+  $("modelActive").value=String(model?.is_active??true);
+  $("modelSort").value=model?.sort_order??1;
+  $("modelStatus").textContent="";
+  $("modalBackdrop").classList.remove("hidden");
+}
+function closeModal(){
+  $("modalBackdrop").classList.add("hidden");
+  editingModelId=null;
+}
+window.editModel=async id=>{
+  const {data,error}=await sb.from("car_models")
+    .select("id,model,price,insurance,image_url,is_active,sort_order")
+    .eq("id",id).single();
+  if(error){setStatus("modelsStatus",error.message);return;}
+  openModal(data);
 };
-signup.onclick=async()=>{
- const {error}=await sb.auth.signUp({email:email.value.trim(),password:password.value});
- msg.textContent=error?error.message:"Akaun berjaya didaftarkan. Semak email jika diperlukan.";
+window.deleteModel=async id=>{
+  if(!confirm("Padam model ini?"))return;
+  const {error}=await sb.from("car_models").delete().eq("id",id);
+  if(error){setStatus("modelsStatus",error.message);return;}
+  await loadModels();
+  setStatus("modelsStatus","Model berjaya dipadam.",true);
 };
+async function saveModel(){
+  setStatus("modelStatus","Menyimpan...",true);
+  const payload={
+    model:$("modelName").value.trim(),
+    price:num($("modelPrice").value),
+    insurance:num($("modelInsurance").value),
+    image_url:$("modelImage").value.trim()||null,
+    is_active:$("modelActive").value==="true",
+    sort_order:num($("modelSort").value)||1
+  };
+  if(!payload.model){
+    setStatus("modelStatus","Nama model diperlukan.");
+    return;
+  }
+  let res;
+  if(editingModelId){
+    res=await sb.from("car_models").update(payload).eq("id",editingModelId);
+  }else{
+    res=await sb.from("car_models").insert(payload);
+  }
+  if(res.error){setStatus("modelStatus",res.error.message);return;}
+  closeModal();
+  await loadModels();
+  setStatus("modelsStatus",editingModelId?"Model berjaya dikemaskini.":"Model berjaya ditambah.",true);
+}
+
+async function loadDashboard(){
+  $("loggedUser").textContent=currentUser.email||"";
+  await Promise.all([loadProfile(),loadSettings(),loadModels()]);
+  showApp();
+}
+
+async function init(){
+  const {data}=await sb.auth.getUser();
+  if(data.user){
+    currentUser=data.user;
+    await loadDashboard();
+  }else{
+    showAuth();
+  }
+}
+
+$("login").onclick=async()=>{
+  $("msg").textContent="Menyemak...";
+  const {data,error}=await sb.auth.signInWithPassword({
+    email:$("email").value.trim(),
+    password:$("password").value
+  });
+  if(error){$("msg").textContent=error.message;return;}
+  currentUser=data.user;
+  await loadDashboard();
+};
+$("signup").onclick=async()=>{
+  const {error}=await sb.auth.signUp({
+    email:$("email").value.trim(),
+    password:$("password").value
+  });
+  $("msg").textContent=error?error.message:"Akaun berjaya didaftarkan. Semak email jika diperlukan.";
+};
+$("logout").onclick=async()=>{
+  await sb.auth.signOut();
+  currentUser=null;
+  showAuth();
+};
+$("refresh").onclick=()=>loadDashboard();
+$("saveProfile").onclick=saveProfile;
+$("saveSettings").onclick=saveSettings;
+$("photoUrl").addEventListener("input",updateAvatar);
+$("addModel").onclick=()=>openModal();
+$("saveModel").onclick=saveModel;
+$("closeModal").onclick=closeModal;
+$("cancelModal").onclick=closeModal;
+$("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))closeModal()});
+
+init();
 </script>
-</body></html>
+</body>
+</html>
