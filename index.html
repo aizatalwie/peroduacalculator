@@ -100,9 +100,12 @@ body{
 .car-zone{
   position:absolute;left:8%;right:8%;top:13.12%;height:24.02%;
   display:flex;align-items:center;justify-content:center;
+  z-index:3;overflow:visible;
 }
 .car-zone img{
   width:100%;height:100%;object-fit:contain;display:none;
+  position:relative;z-index:4;
+  max-width:100%;max-height:100%;
 }
 
 /* MONTHLY + PROFILE */
@@ -443,11 +446,19 @@ function render(){
     $("agentPhoto").style.display = "block";
   }
 
+  const carImg = $("carImage");
+  carImg.style.display = "none";
+  carImg.removeAttribute("src");
+
   if(m.image_url){
-    $("carImage").src = m.image_url;
-    $("carImage").style.display = "block";
-  }else{
-    $("carImage").style.display = "none";
+    carImg.onload = () => {
+      carImg.style.display = "block";
+    };
+    carImg.onerror = () => {
+      carImg.style.display = "none";
+      console.error("Gagal memuat gambar kereta:", m.image_url);
+    };
+    carImg.src = m.image_url;
   }
 
   const wa = String(DATA.profile.whatsapp || "").replace(/\D/g,"");
